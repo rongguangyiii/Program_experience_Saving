@@ -22,16 +22,20 @@ int main() {
 	TriBase triBase;
 	triBase.genCDT();
 	triBase.filterTriGrid();
+	triBase.updateTriEleIndex();//更新三角形单元的索引
+	triBase.updateEdegesType();//更新三角形单元边的类型
 	triBase.checkTriGrid();
 	triBase.reconstructNotIdealTriGrid();
-	triBase.reSetAllTriEleIndex();
-
-	triBase.OutputTriGrid2Tecplot(triBase.returnTecplotIndex(), triBase.GetTriEleVec(), "Tri_reconstruct");
+	triBase.updateTriEleIndex();//更新三角形单元的索引
+	triBase.updateTriGridType();//更新三角形单元网格的类型
+	triBase.updateEdegesType();//更新三角形单元边的类型
+	triBase.GenTriAndquad();
+	triBase.WriteTecplotFile("Tri_quad_final");
 	return 0;
 }
 
 
-int TriBase::genCDT() {
+void TriBase::genCDT() {
 	std::vector<Point_2> poly_1_cdt = { {1,2}, {3,2}, {7,2}, {7,4}, {8,7}, {5,8}, {2,6}, {3,4} };
 	std::vector<Point_2> poly_2_cdt = { {4,4}, {6,3}, {6,6}, {4,6}, {5,5} };
 
@@ -86,7 +90,7 @@ int TriBase::genCDT() {
 
 	tecplotFile.close();
 
-	return 0;
+	return;
 }
 
 void TriBase::filterTriGrid()
@@ -179,7 +183,6 @@ void TriBase::OutputTriGrid2Tecplot(const std::vector<size_t> pointIndexVec, std
 
 void TriBase::checkTriGrid()
 {
-	reSetAllTriEleIndex();//重新设置三角形单元的索引
 	std::vector<size_t> poly_outer_bound{ 0,1,2,3,4,5,6,7 };
 	std::vector<TriEle>  notIdealTriVec;
 	size_t Tri_count = 0;
@@ -188,7 +191,7 @@ void TriBase::checkTriGrid()
 		size_t have_count = 0;
 		size_t notHave_count = 0;
 		auto triVertex = triEleVec_.at(iTri).GetTriEleVertex();
-		addTri2EdgeTable(triEleVec_.at(iTri));
+		//addTri2EdgeTable(triEleVec_.at(iTri));
 		//每个三角形的三个顶点循环
 		for (auto perVertex : triVertex)
 		{
@@ -233,38 +236,32 @@ void TriBase::reconstructNotIdealTriGrid()
 	if (0 == notIdealTriVec.size())
 		return;
 
-	reSetAllTriEleIndex();//重新设置三角形单元的索引
+	//updateTriEleIndex();//重新设置三角形单元的索引
 	size_t Tri_count = 0;
 	std::vector<size_t> toDeleteTriIndex;
 	for (size_t inot = 0; inot < notIdealTriVec.size(); inot++)
 	{
 		auto& currentTri = notIdealTriVec.at(inot);
-		auto triVertex = currentTri.GetTriEleVertex();
-		std::vector<TriEdge> edges{
-			TriEdge(triVertex.at(0), triVertex.at(1)),
-			TriEdge(triVertex.at(1), triVertex.at(2)),
-			TriEdge(triVertex.at(2), triVertex.at(0))
-		};
 		size_t numTri = 0;
-		for (const TriEdge& edge : edges)
+		for (const TriEdge& edge : currentTri.getTriEdges())
 		{
-			auto it = edgeTable_.find(edge);
-			if (it != edgeTable_.end())
-				numTri = it->second.size();
-			if (2 == numTri)
-			{
-				const std::vector<TriEle>& triangles = it->second;
-				//为防止误删三角形，先将要删除的三角形索引存储起来
-				for each (auto var in triangles)
-					toDeleteTriIndex.push_back(var.GetTriEleIndex());
-				reconstructNotIdealTriGrid(edge, triangles);
+			if (EdgeType::unique == edge.getEdgeType())
+				continue;
 
-			}
+			auto it = getEdgeTable().find(edge);
+			const std::vector<TriEle>& triangles = it->second;
+			//为防止误删三角形，先将要删除的三角形索引存储起来
+			for each (auto var in triangles)
+				toDeleteTriIndex.push_back(var.GetTriEleIndex());
+			reconstructNotIdealTriGrid(edge, triangles);
 		}
 	}
 
 	//删除部分三角形
 	DeleteTri(toDeleteTriIndex);
+
+	//输出重构后的三角形网格
+	OutputTriGrid2Tecplot(returnTecplotIndex(), GetTriEleVec(), "Tri_reconstruct");
 
 	return;
 }
@@ -322,18 +319,22 @@ void TriBase::reconstructNotIdealTriGrid(const TriEdge& edge, const std::vector<
 	std::vector<size_t> newTri_2{ tri_1_diff, tri_2_diff, coindex_b };
 	std::vector<std::pair<Point, size_t >> newTri_1_pair;
 	std::vector<std::pair<Point, size_t >> newTri_2_pair;
+	Point coor_a ;
+	Point coor_b ;
 	for (auto it : newTri_1)
 	{
 		Point temcoor = all_points_.at(it);
 		newTri_1_pair.push_back(std::make_pair(temcoor, it));
+		coor_a += (temcoor/ newTri_1.size());
 	}
 	for (auto it : newTri_2)
 	{
 		Point temcoor = all_points_.at(it);
 		newTri_2_pair.push_back(std::make_pair(temcoor, it));
+		coor_b += (temcoor/ newTri_2.size());
 	}
-	reorderPointsIndex(newTri_1_pair, triangles.at(0).getBaryCenter());//按逆时针重新排序
-	reorderPointsIndex(newTri_2_pair, triangles.at(1).getBaryCenter());
+	reorderPointsIndex(newTri_1_pair, coor_a);//按逆时针重新排序
+	reorderPointsIndex(newTri_2_pair, coor_b);
 	newTri_1.clear();
 	newTri_2.clear();
 	for (auto& it : newTri_1_pair)
@@ -341,8 +342,10 @@ void TriBase::reconstructNotIdealTriGrid(const TriEdge& edge, const std::vector<
 	for (auto& it : newTri_2_pair)
 		newTri_2.push_back(it.second);
 	TriEle triEle_1(newTri_1.at(0), newTri_1.at(1), newTri_1.at(2), GetTriEleVec().size());
+	triEle_1.setBaryCenter(coor_a);
 	AddTriEle(triEle_1);
 	TriEle triEle_2(newTri_2.at(0), newTri_2.at(1), newTri_2.at(2), GetTriEleVec().size());
+	triEle_2.setBaryCenter(coor_b);
 	AddTriEle(triEle_2);
 
 	return;
@@ -366,6 +369,43 @@ void TriBase::DeleteTri(std::vector<size_t> toDeleteTriIndex)
 			}
 		}
 	}
+
+	return;
+}
+
+void TriBase::updateEdegesType()
+{
+	for (auto& var : triEleVec_)
+	{
+		for (auto& edge : var.getTriEdges())
+		{
+			auto it = edgeTable_.find(edge);
+			if (it != edgeTable_.end())
+			{
+				size_t numTri = it->second.size();
+				if (1 == numTri)
+				{
+					edge.setEdgeType(EdgeType::unique);
+				}
+				else if (2 == numTri)
+				{
+					edge.setEdgeType(EdgeType::shared);
+				}
+				else
+				{
+					std::cout << "函数：updateEdegesType(): 边表中找到的三角形数量不对！！！" << std::endl;
+				}
+			}
+			else
+			{
+				std::cout << "函数：updateEdegesType(): 边表中没有找到该边！！！" << std::endl;
+			}
+		}
+
+	}
+
+	//只要更新过triEle中的相关信息，就需要更新边表
+	updateEdgeTable();
 
 	return;
 }
