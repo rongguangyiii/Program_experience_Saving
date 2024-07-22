@@ -11,6 +11,10 @@ add_executable(${PROJECT_NAME} "${PROJECT_SOURCE_DIR}/src/entry/main.cpp" ${SRC_
 #程序输出路径
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/out/${CMAKE_BUILD_TYPE})
 
+#Eigen库
+find_package(Eigen3 CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen)
+
 #可执行文件后缀
 set_target_properties(${PROJECT_NAME} PROPERTIES DEBUG_POSTFIX ${PROJECT_VERSION})
 set_target_properties(${PROJECT_NAME} PROPERTIES RELEASE_POSTFIX ${PROJECT_VERSION}) 
