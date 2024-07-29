@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project (ASSEMBLESHOCK VERSION 20240709 LANGUAGES CXX)
+project (TEST VERSION 2.3 LANGUAGES CXX)
 
 # 指定构建的子目录
 add_subdirectory(${PROJECT_SOURCE_DIR}/src)

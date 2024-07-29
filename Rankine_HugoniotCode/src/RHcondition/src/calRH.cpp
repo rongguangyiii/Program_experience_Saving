@@ -75,7 +75,7 @@ void CALRH::calculateRH()
 	double cc = basicSonic(downStream_.at("rho"), downStream_.at("p"), gamma_);
 	double vr = sqrt(ratio_m) * cc;
 	Eigen::Vector3d vt2 = vt1;
-	Eigen::Vector3d ubnd = vt2 + vr * normal_ + vs;
+	Eigen::Vector3d ubnd = vt2 + vr * normal_ + vs;//下游边界速度 = 切向速度 + 法向速度
 	downStream_["u"] = ubnd.x();
 	downStream_["v"] = ubnd.y();
 	downStream_["w"] = ubnd.z();
