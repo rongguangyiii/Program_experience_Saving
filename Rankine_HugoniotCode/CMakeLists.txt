@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
+set(CMAKE_TOOLCHAIN_FILE D:/dev_1st/vcpkg/scripts/buildsystems/vcpkg.cmake)
 project (TEST VERSION 2.3 LANGUAGES CXX)
 
 # 指定构建的子目录
@@ -14,6 +15,7 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/out/${CMAKE_BUILD_TYPE})
 #Eigen库
 find_package(Eigen3 CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen)
+
 
 #可执行文件后缀
 set_target_properties(${PROJECT_NAME} PROPERTIES DEBUG_POSTFIX ${PROJECT_VERSION})
