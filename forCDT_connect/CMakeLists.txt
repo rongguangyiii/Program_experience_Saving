@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
-set(CMAKE_TOOLCHAIN_FILE "D:/dev_VCPKG/vcpkg/scripts/buildsystems/vcpkg.cmake")
+set(CMAKE_TOOLCHAIN_FILE "D:/dev_1st/vcpkg/scripts/buildsystems/vcpkg.cmake")
 project(newCDT02)
 
 # Find CGAL package
