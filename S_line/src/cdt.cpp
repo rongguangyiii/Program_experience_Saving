@@ -45,6 +45,28 @@ Point TriManager::toCGALPoint(const Coord& coord) {
 	return Point(coord.x, coord.y);
 }
 
+Coord TriManager::toCoord(const Point& p) const {
+	return Coord{ p.x(), p.y(), 0.0 }; // 目前 z 坐标为 0
+}
+
+std::unordered_map<Coord, std::vector<Coord>, CoordHash> TriManager::getNeighbors() {
+	std::unordered_map<Coord, std::vector<Coord>, CoordHash> neighbors;
+
+	for (auto vit = cdt_.finite_vertices_begin(); vit != cdt_.finite_vertices_end(); ++vit) {
+		Coord current = toCoord(vit->point());
+
+		auto circulator = cdt_.incident_vertices(vit), done = circulator;
+		do {
+			if (!cdt_.is_infinite(circulator)) {
+				Coord neighbor = toCoord(circulator->point());
+				neighbors[current].push_back(neighbor);
+			}
+		} while (++circulator != done);
+	}
+
+	return neighbors;
+}
+
 // 输出三角剖分到文件（用于 Tecplot）
 void TriManager::outputToTecplot(std::ofstream& out, const std::string& filename) {
 

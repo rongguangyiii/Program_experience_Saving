@@ -38,3 +38,33 @@ void UniformGrid::generateElements() {
 		}
 	}
 }
+
+// 获取每个点的邻居点
+std::unordered_map<Coord, std::set<Coord>, CoordHash> UniformGrid::getNeighbors() const {
+	//使用std::set<Coord>保证了元素的唯一,td::vector<Coord>不能保证元素的唯一
+	std::unordered_map<Coord, std::set<Coord>, CoordHash> neighbors_map;
+
+	// 遍历每个单元，更新邻居关系
+	for (const auto& elem : elements_) {
+		Coord p1 = points_.at(elem[0]-1);
+		Coord p2 = points_.at(elem[1]-1);
+		Coord p3 = points_.at(elem[2]-1);
+		Coord p4 = points_.at(elem[3]-1);
+
+		// 更新邻居关系
+		addNeighbor(neighbors_map, p1, p2);
+		addNeighbor(neighbors_map, p2, p3);
+		addNeighbor(neighbors_map, p3, p4);
+		addNeighbor(neighbors_map, p4, p1);
+
+	}
+
+	return neighbors_map;
+}
+
+void UniformGrid::addNeighbor(std::unordered_map<Coord, std::set<Coord>, CoordHash>& map, const Coord& p1, const Coord& p2) const {
+	if (p1 == p2) return; // 避免将自己作为邻居
+
+	map[p1].insert(p2);
+	map[p2].insert(p1);
+}
