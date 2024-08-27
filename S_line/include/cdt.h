@@ -7,10 +7,14 @@
 #include <map>
 #include "uniformGrid.h"
 
-
 typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
-typedef CGAL::Constrained_Delaunay_triangulation_2<K> CDT;
+typedef CGAL::Triangulation_vertex_base_2<K> Vb;
+typedef CGAL::Constrained_triangulation_face_base_2<K> Fb;
+typedef CGAL::Triangulation_data_structure_2<Vb, Fb> TDS;
+typedef CGAL::Exact_predicates_tag Itag;
+typedef CGAL::Constrained_Delaunay_triangulation_2<K, TDS, Itag> CDT;
 typedef CDT::Point Point;
+typedef CDT::Vertex_handle Vertex_handle;
 
 class TriManager {
 public:
@@ -21,12 +25,14 @@ public:
 	// 插入外围区域的点
 	void insertBoundaryPoints(const std::vector<Coord>& points);
 	void insertBoundaryPoints(const std::vector<Point>& points);
-
+	// 返回每个点的所有邻居点
+	std::unordered_map<Coord, std::vector<Coord>, CoordHash> getNeighbors();
 	// 输出三角剖分到文件（用于 Tecplot）
 	void outputToTecplot(std::ofstream& out, const std::string& name);
 
 private:
 	Point toCGALPoint(const Coord& coord);
+	Coord toCoord(const Point& p) const;
 	CDT cdt_;
 };
 
@@ -35,55 +41,70 @@ USAGE: 用法说明
 	   给定外围点和约束点生成cdt;
 	   不需要显式初始化 cdt_，因为它会自动通过默认构造函数初始化。
  ————————----------------------------------------------------------------
- int main() {
-	TriManager tm;
+int main() {
+    // 创建TriManager对象
+    TriManager tm;
 
-	// 定义在直线 x = 1 上的约束点
-	std::vector<Point> constrain_line = {
-		Point(1.0, 0.0),
-		Point(1.0, 0.5),
-		Point(1.0, 1.0),
-		Point(1.0, 1.5),
-		Point(1.0, 2.0)
-	};
+    // 定义在直线 x = 1 上的约束点
+    std::vector<Coord> constrain_line = {
+        {1.0, 0.0, 0.0},
+        {1.0, 0.5, 0.0},
+        {1.0, 1.0, 0.0},
+        {1.0, 1.5, 0.0},
+        {1.0, 2.0, 0.0}
+    };
 
-	// 插入约束线上的点
-	tm.insertConstraintLine(constrain_line);
+    // 插入约束线上的点
+    tm.insertConstraintLine(constrain_line);
 
-	// 定义外围侧区域的点
-	std::vector<Point> bound_side = {
-		Point(0.5, 0.5),
-		Point(0.5, 1.5),
-		Point(0.2, 1.0),
-		Point(0.8, 0.8),
-		Point(0.7, 1.3),
-		Point(1.5, 0.5),
-		Point(1.5, 1.5),
-		Point(1.8, 1.0),
-		Point(1.2, 0.8),
-		Point(1.7, 1.3),
-		Point(0.0, 0.0),
-		Point(0.0, 0.5),
-		Point(0.0, 1.0),
-		Point(0.0, 1.5),
-		Point(0.0, 2.0),
-		Point(0.5, 2.0),
-		Point(1.5, 2.0),
-		Point(2.0, 2.0),
-		Point(2.0, 1.5),
-		Point(2.0, 1.0),
-		Point(2.0, 0.5),
-		Point(2.0, 0.0),
-		Point(1.5, 0.0),
-		Point(0.5, 0.0),
-	};
+    // 定义外围区域的点
+    std::vector<Coord> boundary_points = {
+        {0.5, 0.5, 0.0},
+        {0.5, 1.5, 0.0},
+        {0.2, 1.0, 0.0},
+        {0.8, 0.8, 0.0},
+        {0.7, 1.3, 0.0},
+        {1.5, 0.5, 0.0},
+        {1.5, 1.5, 0.0},
+        {1.8, 1.0, 0.0},
+        {1.2, 0.8, 0.0},
+        {1.7, 1.3, 0.0},
+        {0.0, 0.0, 0.0},
+        {0.0, 0.5, 0.0},
+        {0.0, 1.0, 0.0},
+        {0.0, 1.5, 0.0},
+        {0.0, 2.0, 0.0},
+        {0.5, 2.0, 0.0},
+        {1.5, 2.0, 0.0},
+        {2.0, 2.0, 0.0},
+        {2.0, 1.5, 0.0},
+        {2.0, 1.0, 0.0},
+        {2.0, 0.5, 0.0},
+        {2.0, 0.0, 0.0},
+        {1.5, 0.0, 0.0},
+        {0.5, 0.0, 0.0},
+    };
 
-	// 插入外围点
-	tm.insertBoundaryPoints(bound_side);
+    // 插入外围区域的点
+    tm.insertBoundaryPoints(boundary_points);
 
-	// 输出三角剖分到文件
-	tm.outputToTecplot("triang20240825.dat");
+    // 获取每个点的所有邻居点
+    auto neighbors = tm.getNeighbors();
 
-	return 0;
- }
+    // 输出邻居点信息
+    for (const auto& [point, neighbor_points] : neighbors) {
+        std::cout << "Point (" << point.x << ", " << point.y << ", " << point.z << ") has neighbors:\n";
+        for (const auto& neighbor : neighbor_points) {
+            std::cout << "\t(" << neighbor.x << ", " << neighbor.y << ", " << neighbor.z << ")\n";
+        }
+    }
+
+    // 输出三角剖分到Tecplot文件
+    std::ofstream outfile("triangulation_output.dat");
+    tm.outputToTecplot(outfile, "Triangulation Example");
+    outfile.close();
+
+    return 0;
+}
+
 -----------------------------------------------------------------------*/
