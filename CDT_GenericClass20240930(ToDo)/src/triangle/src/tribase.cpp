@@ -10,26 +10,23 @@ License
 !   @date  2024.09.30
 !   @location DaLian
 \*---------------------------------------------------------------------------*/
-
 #include "triangle/include/cgalTypes.h"
 #include "triangle/include/triEle.h"
 #include "triangle/include/triBase.h"
 #include <memory>
 #include <vector>
 
-
-
 /*---------------------------------------------------------------------------------------------
 *  Function: size_t operator()(const TriEdge& k) const
-*  Purpose: 
+*  Purpose:
 *      根据输入的键(TriEdge),通过FNV-1a哈希算法计算得到一个哈希值(唯一整数)
-*  Description: 
+*  Description:
 *     std::unordered_map 会自动使用EdgeHash的operator()来计算edge的哈希值，并据此
 *     确定在哈希表中应该存储这个键值对的位置。你不需要（也不应该）直接调用EdgeHash的operator()。
 *     这是std::unordered_map的内部实现细节，它负责确保在需要时正确地使用哈希函数。
-*  Usage: 
+*  Usage:
 *		std::unordered_map<TriEdge, std::vector<TriEle>, EdgeHash>
-*  Notice : 
+*  Notice :
 *		需要重载 键(TriEdge) 对应的operator==()函数，和hash值实现函数，也就是本函数。
 *  Arguments:
 *    k - 输入的键，即边，由两个顶点组成
@@ -49,9 +46,9 @@ std::size_t EdgeHash::operator()(const std::shared_ptr<TriEdge>& k) const {
 void TriBase::addEdgeTableItem(const triElePtr_& triEle_ptr)
 {
 	// 对每个边，将其添加到边表中
-	for (const auto& edge : triEle_ptr->getTriEdgesRef()) 
+	for (const auto& edge : triEle_ptr->getTriEdgesRef())
 	{
-		if (edge->vA == edge->vB){
+		if (edge->vA == edge->vB) {
 			//spdlog::error("当前边的TriNode出错：vA={},vB={}", edge->vA, edge->vB);
 			throw std::runtime_error("Caught an exception!");
 		}
@@ -60,10 +57,10 @@ void TriBase::addEdgeTableItem(const triElePtr_& triEle_ptr)
 
 }
 
-TriBase::TriBase(std::vector<TriCoord>& outterNode, std::vector<TriCoord>& innerNode,
+TriBase::TriBase(std::vector<TriNode>& outterNode, std::vector<TriNode>& innerNode,
 	const std::string& typeName) :dividType_(typeName)
 {
-	if(dividType_=="ring_ring")
+	if (dividType_ == "ring_ring")
 	{
 		reorderNodes(outterNode);
 		reorderNodes(innerNode);
@@ -72,45 +69,128 @@ TriBase::TriBase(std::vector<TriCoord>& outterNode, std::vector<TriCoord>& inner
 	//生成TriNodeMap，每个TriNode必须在实例化的时候就给定点类型,每个点的索引必须唯一；
 	for (const auto& per_it : outterNode)
 	{
-		const size_t& index = per_it.getIndex();
-		TriNode Point_cdt{ per_it, index, TriNodeType::outter };
-		TriNodeMap_[index] = Point_cdt;
+		const size_t& index = per_it.getindex();
+		TriNodeMap_[index] = per_it;
 		cgalPointsIndexVec_.emplace_back(index);
 	}
 	for (const auto& per_it : innerNode)
 	{
-		const size_t& index = per_it.getIndex();
-		TriNode Point_cdt{ per_it, index, TriNodeType::inner };
-		TriNodeMap_[index] = Point_cdt;
+		const size_t& index = per_it.getindex();
+		TriNodeMap_[index] = per_it;
 		cgalPointsIndexVec_.emplace_back(index);
 	}
 
 }
 
+void TriBase::insertCtrlOutterPoly(std::map<size_t, std::vector<double>>CoorMap)
+{
+	std::vector<TriNode> nodeVec;
+	for (const auto& it : CoorMap)
+	{
+		size_t index = it.first;
+		std::vector<double> coor = it.second;
+		double x = 0, y = 0, z = 0;
+		if (coor.size() == 2) {
+			x = coor[0], y = coor[1];
+		}
+		else if (coor.size() == 3) {
+			x = coor[0], y = coor[1], z = coor[2];
+		}
+		nodeVec.emplace_back(TriNode(x, y, z, index, TriNodeType::outter));
+	}
+	reorderNodes(nodeVec);
+	for (size_t i = 0; i < nodeVec.size(); i++)
+	{
+		size_t index = nodeVec[i].getindex();
+		TriNodeMap_[index] = nodeVec[i];
+		cgalPointsIndexVec_.emplace_back(index);
+	}
+
+}
+void TriBase::insertCtrlInnerPoly(std::map<size_t, std::vector<double>>CoorMap)
+{
+	std::vector<TriNode> nodeVec;
+	for (const auto& it : CoorMap)
+	{
+		size_t index = it.first;
+		std::vector<double> coor = it.second;
+		double x = 0, y = 0, z = 0;
+		if (coor.size() == 2) {
+			x = coor[0], y = coor[1];
+		}
+		else if (coor.size() == 3) {
+			x = coor[0], y = coor[1], z = coor[2];
+		}
+		nodeVec.emplace_back(TriNode(x, y, z, index, TriNodeType::inner));
+	}
+	reorderNodes(nodeVec);
+	for (size_t i = 0; i < nodeVec.size(); i++)
+	{
+		size_t index = nodeVec[i].getindex();
+		TriNodeMap_[index] = nodeVec[i];
+		cgalPointsIndexVec_.emplace_back(index);
+	}
+}
+void TriBase::insertCtrlLine(std::map<size_t, std::vector<double>>CoorMap)
+{
+	for (const auto& it : CoorMap)
+	{
+		size_t index = it.first;
+		std::vector<double> coor = it.second;
+		double x = 0, y = 0, z = 0;
+		if (coor.size() == 2) {
+			x = coor[0], y = coor[1];
+		}
+		else if (coor.size() == 3) {
+			x = coor[0], y = coor[1], z = coor[2];
+		}
+		TriNodeMap_[index] = TriNode(x, y, z, index, TriNodeType::inner);
+		cgalPointsIndexVec_.emplace_back(index);
+	}
+}
+void TriBase::insertPoint(std::map<size_t, std::vector<double>>CoorMap)
+{
+	for (const auto& it : CoorMap)
+	{
+		size_t index = it.first;
+		std::vector<double> coor = it.second;
+		double x = 0, y = 0, z = 0;
+		if (coor.size() == 2) {
+			x = coor[0], y = coor[1];
+		}
+		else if (coor.size() == 3) {
+			x = coor[0], y = coor[1], z = coor[2];
+		}
+		TriNodeMap_[index] = TriNode(x, y, z, index);
+		cgalPointsIndexVec_.emplace_back(index);
+	}
+}
+
+
 /*----------------------------------------------------------------------------------------------
 	本部分是一个简单的内凹外凹多边形；用于DEBUG
 ------------------------------------------------------------------------------------------------*/
-//TriBase::TriBase(std::vector<Coordinate>& backGrid_hole, std::vector<Coordinate>& unstructGrid_hole)
-//{
-//	spdlog::warn("--------------------------- TriBase DEBUG START ---------------------------");
-//	std::vector<Coordinate> poly_1_outter = { {1,2}, {3,2}, {7,2}, {7,4}, {8,7}, {5,8}, {2,6}, {3,4} };
-//	std::vector<Coordinate> poly_2_inner = { {4,4}, {6,3}, {6,6}, {4,6}, {5,5} };
-//	size_t index = 1;
-//	for (const auto& per_it : poly_1_outter)
-//	{
-//		TriNode Point_cdt{ per_it, index, TriNodeType::outter };
-//		TriNodeMap_[index] = Point_cdt;
-//		cgalPointsIndexVec_.emplace_back(index);
-//		index++;
-//	}
-//	for (const auto& per_it : poly_2_inner)
-//	{
-//		TriNode Point_cdt{ per_it, index, TriNodeType::inner };
-//		TriNodeMap_[index] = Point_cdt;
-//		cgalPointsIndexVec_.emplace_back(index);
-//		index++;
-//	}
-//}
+TriBase::TriBase(const std::string& type)
+{
+	std::vector<std::vector<double>> poly_1_outter = { {1,2}, {3,2}, {7,2}, {7,4}, {8,7}, {5,8}, {2,6}, {3,4} };
+	std::vector<std::vector<double>> poly_2_inner = { {4,4}, {6,3}, {6,6}, {4,6}, {5,5} };
+	size_t index = 1;
+	for (const auto& per_it : poly_1_outter)
+	{
+		TriNode Point_cdt{ per_it[0],per_it[1],0, index, TriNodeType::outter };
+		TriNodeMap_[index] = Point_cdt;
+		cgalPointsIndexVec_.emplace_back(index);
+		index++;
+	}
+	for (const auto& per_it : poly_2_inner)
+	{
+		TriNode Point_cdt{ per_it[0],per_it[1],0, index, TriNodeType::inner };
+		TriNodeMap_[index] = Point_cdt;
+		cgalPointsIndexVec_.emplace_back(index);
+		index++;
+	}
+	dividType_ = type;
+}
 
 /*-------------------------------------------------------------------
 *  Function: updateEdgeTable()
@@ -125,7 +205,7 @@ void TriBase::genEdgeTable()
 	edgeTable_.clear();
 	for (auto& triEle : triEleVec_)
 		addEdgeTableItem(triEle.second);
-	
+
 	return;
 }
 
@@ -218,22 +298,22 @@ void TriBase::genCDT()
 	//step 1: 设置CDT约束边界和三角形筛选边界。
 	std::vector<Point_2> cgal_outerPointsVec;
 	std::vector<Point_2> cgal_innerPointsVec;
-	std::vector<TriCoord> poly_outerCoor;
-	std::vector<TriCoord> poly_innerCoor;
+	std::vector<TriNode> poly_outerCoor;
+	std::vector<TriNode> poly_innerCoor;
 	//TriNodeMap_是没有顺序的，在TriNodeMap_中循环就会导致控制边界也没有顺序了，插入边界时候出错。
 	//在cgalPointsIndexVec_中循环就保证了顺序。
-	for (const auto& perit: cgalPointsIndexVec_)
+	for (const auto& perit : cgalPointsIndexVec_)
 	{
 		const auto& cur_trinode = TriNodeMap_.at(perit);
 		if (cur_trinode.gettype() == TriNodeType::outter)
 		{
-			cgal_outerPointsVec.push_back({ cur_trinode.getcoord().x() ,cur_trinode.getcoord().y() });
-			poly_outerCoor.emplace_back(cur_trinode.getcoord());
+			cgal_outerPointsVec.push_back({ cur_trinode.x() ,cur_trinode.y() });
+			poly_outerCoor.emplace_back(cur_trinode);
 		}
 		else if (cur_trinode.gettype() == TriNodeType::inner)
 		{
-			cgal_innerPointsVec.push_back({ cur_trinode.getcoord().x() ,cur_trinode.getcoord().y() });
-			poly_innerCoor.emplace_back(cur_trinode.getcoord());
+			cgal_innerPointsVec.push_back({ cur_trinode.x() ,cur_trinode.y() });
+			poly_innerCoor.emplace_back(cur_trinode);
 		}
 		else
 		{
@@ -260,13 +340,13 @@ void TriBase::genCDT()
 	}
 	vertex2tecplotIndex_.first = cgalPointsIndexVec_;//节点索引
 	vertex2tecplotIndex_.second = vertex2tecplotIndex;//局部索引
-	
+
 	/*-----------------------------------------------------------------
 	 * Note：CGAL库的insert_constraint函数，用于插入约束边界；
 	 *	     通常需要两个类型为Point_2的参数。表示插入约束线段的两个端点，
 	 *       当有多个线段插入时，选段首位相连的节点必须是有序的。
 	 *-----------------------------------------------------------------*/
-	//step 5: 插入约束边界,因为是两个圆环约所以束边界要分别插入！！！
+	 //step 5: 插入约束边界,因为是两个圆环约所以束边界要分别插入！！！
 	if (dividType_ == "ring_ring")
 	{
 		for (size_t i = 0; i < cgal_outerPointsVec.size(); ++i)
@@ -276,9 +356,7 @@ void TriBase::genCDT()
 	}
 	else if (dividType_ == "ring_line")
 	{
-		//for (size_t i = 0; i < cgal_outerPointsVec.size(); ++i)
-		//	cdt.insert_constraint(cgal_outerPointsVec[i], cgal_outerPointsVec[(i + 1) % cgal_outerPointsVec.size()]);
-		for (size_t i = 0; i < cgal_innerPointsVec.size()-1; ++i)
+		for (size_t i = 0; i < cgal_innerPointsVec.size() - 1; ++i)
 			cdt.insert_constraint(cgal_innerPointsVec[i], cgal_innerPointsVec[i + 1]);
 	}
 
@@ -289,24 +367,24 @@ void TriBase::genCDT()
 		size_t v0 = vertex_to_index[fit->vertex(0)];
 		size_t v1 = vertex_to_index[fit->vertex(1)];
 		size_t v2 = vertex_to_index[fit->vertex(2)];
-		TriCoord p0 = index2Coor(v0);
-		TriCoord p1 = index2Coor(v1);
-		TriCoord p2 = index2Coor(v2);
+		TriNode p0 = index2Coor(v0);
+		TriNode p1 = index2Coor(v1);
+		TriNode p2 = index2Coor(v2);
 		//step 1 : 判断三角形的三个顶点是否在一条直线上,
 		if (isCollinear(p0, p1, p2))
 			continue;
-		TriCoord triCenter = (p0 += p1 += p2) /= 3.0;
-		//step 3 : 判断三角形是否在<外层>边界多边形<外部>，如果<在外部>则删除
-		if (!isPointInPolygon_moreOuter(triCenter, poly_outerCoor))
-			continue;
-		if (dividType_ == "ring_ring")
-		{
+		TriNode triCenter = (p0 += p1 += p2) /= 3.0;
+		if (dividType_ == "ring_ring") {
 			//step 2 : 判断三角形是否在<内层>边界多边形<内部>，如果<在内部>则删除
 			if (isPointInPolygon_moreInner(triCenter, poly_innerCoor))
 				continue;
+			//step 3 : 判断三角形是否在<外层>边界多边形<外部>，如果<在外部>则删除
+			if (!isPointInPolygon_moreOuter(triCenter, poly_outerCoor))
+				continue;
 		}
 		else if (dividType_ == "ring_line") {
-			//do nothing
+			if (!isPointInPolygon_moreOuter(triCenter, poly_outerCoor))
+				continue;
 		}
 		std::vector<TriNode> triNodes;
 		triNodes.emplace_back(TriNodeMap_.at(v0));
@@ -319,15 +397,16 @@ void TriBase::genCDT()
 	}
 
 	//step 7: 输出初始三角形网格
-	//std::vector< std::vector<size_t> > cellVec;
-	//for (const auto& perTri : triEleVec_)
-	//	cellVec.push_back(perTri.second->GetTriEleVertex());
-	//OutputConnectGrid2Tecplot(vertex2tecplotIndex_.first, cellVec, vertex2tecplotIndex_.second, "Tri_ini");
+	std::vector< std::vector<size_t> > cellVec;
+	for (const auto& perTri : triEleVec_)
+		cellVec.push_back(perTri.second->GetTriEleVertex());
+	OutputConnectGrid2Tecplot(vertex2tecplotIndex_.first, cellVec, vertex2tecplotIndex_.second, "Tri_ini");
 
 	//step ... 接下来可以处理三角形信息了
 
 	return;
 }
+
 
 /*-------------------------------------------------------------------
 *  Function: filterTriGrid
@@ -371,7 +450,7 @@ void TriBase::reconstructNotIdealTriGrid()
 		return;
 
 	//step 1: 生成边表
-	genEdgeTable(); 
+	genEdgeTable();
 	//step 2: 重构非理想三角形
 	std::vector<size_t> toDeleteTriIndex;
 	for (size_t inot = 0; inot < notIdealTriVec.size(); inot++)
@@ -385,7 +464,7 @@ void TriBase::reconstructNotIdealTriGrid()
 
 			const std::vector<std::shared_ptr<TriEle>>& triangles = it->second;
 			//为防止误删三角形，先将要删除的三角形索引存储起来
-			for(auto& var : triangles)
+			for (auto& var : triangles)
 				toDeleteTriIndex.push_back(var->GetTriEleIndex());
 			reconstructNotIdealTriGrid(*edge, triangles);
 		}
@@ -432,19 +511,19 @@ void TriBase::reconstructNotIdealTriGrid(const TriEdge& edge, const std::vector<
 	}
 	std::vector<size_t> newTri_1{ tri_1_diff, tri_2_diff, coindex_a };
 	std::vector<size_t> newTri_2{ tri_1_diff, tri_2_diff, coindex_b };
-	std::vector<std::pair<TriCoord, size_t >> newTri_1_pair;
-	std::vector<std::pair<TriCoord, size_t >> newTri_2_pair;
-	TriCoord average_1;
-	TriCoord average_2;
+	std::vector<std::pair<TriNode, size_t >> newTri_1_pair;
+	std::vector<std::pair<TriNode, size_t >> newTri_2_pair;
+	TriNode average_1;
+	TriNode average_2;
 	for (auto it : newTri_1)
 	{
-		TriCoord temcoor = index2Coor(it);
+		TriNode temcoor = index2Coor(it);
 		newTri_1_pair.push_back(std::make_pair(temcoor, it));
 		average_1 += (temcoor /= (double)newTri_1.size());
 	}
 	for (auto it : newTri_2)
 	{
-		TriCoord temcoor = index2Coor(it);
+		TriNode temcoor = index2Coor(it);
 		newTri_2_pair.push_back(std::make_pair(temcoor, it));
 		average_2 += (temcoor /= (double)newTri_2.size());
 	}
@@ -465,7 +544,6 @@ void TriBase::reconstructNotIdealTriGrid(const TriEdge& edge, const std::vector<
 	triEle_1.setTriCenter(average_1);
 	const auto& current_triptr = std::make_shared<TriEle>(triEle_1);
 	addTriEle(current_triptr);
-	//AddTriEle(triEle_1);
 	addEdgeTableItem(current_triptr);
 
 	std::vector<TriNode> triNodes_2;
@@ -476,7 +554,6 @@ void TriBase::reconstructNotIdealTriGrid(const TriEdge& edge, const std::vector<
 	triEle_2.setTriCenter(average_2);
 	const auto& another_ptr = std::make_shared<TriEle>(triEle_2);
 	addTriEle(another_ptr);
-	//AddTriEle(triEle_2);
 	addEdgeTableItem(another_ptr);
 
 	return;
@@ -559,11 +636,11 @@ void TriBase::genTriAndQuad(const TriEdge& edge, const std::vector<triElePtr_>& 
 	}
 
 	std::vector<size_t> quad{ tri_1_diff, tri_2_diff, coindex_a, coindex_b };
-	std::vector<std::pair<TriCoord, size_t >> quad_pair;
-	TriCoord average;
+	std::vector<std::pair<TriNode, size_t >> quad_pair;
+	TriNode average;
 	for (auto it : quad)
 	{
-		TriCoord temcoor = index2Coor(it);
+		TriNode temcoor = index2Coor(it);
 		quad_pair.push_back(std::make_pair(temcoor, it));
 		average += (temcoor /= (double)quad.size());
 	}
@@ -578,7 +655,7 @@ void TriBase::genTriAndQuad(const TriEdge& edge, const std::vector<triElePtr_>& 
 	//标记相邻三角形为TriEleTag::used
 	for (auto& var : triangles)
 	{
-		if (var->getTriEleTag() == TriEleTag::used){
+		if (var->getTriEleTag() == TriEleTag::used) {
 			//spdlog::error("索引为{}的三角形转换四边形出错!", var->GetTriEleIndex());
 			throw std::runtime_error("Caught an exception!");
 		}
@@ -590,7 +667,6 @@ void TriBase::genTriAndQuad(const TriEdge& edge, const std::vector<triElePtr_>& 
 
 void TriBase::gencell(const triEleMap_& content)
 {
-	//cell_.clear();
 	for (auto& triEle : content)
 		cell_.push_back(triEle.second->GetTriEleVertex());
 	return;
@@ -599,7 +675,7 @@ void TriBase::gencell(const triEleMap_& content)
 void TriBase::boostMesh()
 {
 	genCDT();
-	//reconstructNotIdealTriGrid();//:Q重构非理想三角形是必须的吗？A感觉不是待后续验证...
+	//reconstructNotIdealTriGrid();//:Q重构非理想三角形是必须的吗？A:不是
 	std::string method = "CDT";
 	//method = "HYB";//用于DEBUG
 	if (method == "CDT")
@@ -608,14 +684,13 @@ void TriBase::boostMesh()
 		genTriAndQuad();
 	else
 		//spdlog::error("gencell()出错：key word error！");
-	return;
+		return;
 }
 
 void TriBase::addTriEle(const triElePtr_& triEle)
-{ 
+{
 	size_t index = triEle->GetTriEleIndex();
 	triEleVec_.insert_or_assign(index, triEle); // 无论元素是否已经存在，都可以正确插入或更新。
-	//triEleVec_.insert_or_assign(index, std::move(triEle)); // 无论元素是否已经存在，都可以正确插入或更新。
 };
 
 void TriBase::removeTriFromEdgeTable(const triElePtr_& triEle_ptr) {
@@ -645,7 +720,7 @@ void TriBase::removeTriEle(size_t triEleKey) {
 }
 
 //方法函数--------------------------------------------------------------------------------------------------------------------------
-void TriBase::reorderPointsIndex(std::vector<std::pair<TriCoord, size_t>>& PointLists, const TriCoord& modelCenter)
+void TriBase::reorderPointsIndex(std::vector<std::pair<TriNode, size_t>>& PointLists, const TriNode& modelCenter)
 {
 	std::size_t wallNodeNum = PointLists.size();
 	std::vector<std::pair<double, size_t>> angleAndIndex;
@@ -653,7 +728,7 @@ void TriBase::reorderPointsIndex(std::vector<std::pair<TriCoord, size_t>>& Point
 	for (size_t iNode = 0; iNode < wallNodeNum; ++iNode)
 	{
 		auto& perNode = PointLists.at(iNode).first;
-		TriCoord vec = perNode - modelCenter;
+		TriNode vec = perNode - modelCenter;
 		double angle = atan2(vec.y(), vec.x());
 		angleAndIndex[iNode] = std::make_pair(angle, iNode);
 	}
@@ -661,8 +736,8 @@ void TriBase::reorderPointsIndex(std::vector<std::pair<TriCoord, size_t>>& Point
 		[](const std::pair<double, size_t>& a, const std::pair<double, size_t>& b) {return a.first < b.first; });
 
 	std::vector<size_t> reorderedIndices;
-	std::vector<TriCoord> NodeVec_temp;
-	std::vector<std::pair<TriCoord, size_t>> NodePairVec_temp2;
+	std::vector<TriNode> NodeVec_temp;
+	std::vector<std::pair<TriNode, size_t>> NodePairVec_temp2;
 	NodeVec_temp.resize(wallNodeNum);
 	reorderedIndices.resize(wallNodeNum);
 	for (size_t i = 0; i < wallNodeNum; ++i)
@@ -674,7 +749,7 @@ void TriBase::reorderPointsIndex(std::vector<std::pair<TriCoord, size_t>>& Point
 	PointLists = NodePairVec_temp2;//会修改原本点的顺序;
 }
 
-bool TriBase::isCollinear(const TriCoord& p1, const TriCoord& p2, const TriCoord& p3)
+bool TriBase::isCollinear(const TriNode& p1, const TriNode& p2, const TriNode& p3)
 {
 	// 使用斜率法判断三点是否共线  
 	// 如果斜率相同或任意两点重合（在容差范围内），则它们共线  
@@ -697,7 +772,7 @@ bool TriBase::isCollinear(const TriCoord& p1, const TriCoord& p2, const TriCoord
 	return false;
 }
 
-void TriBase::createFolder(const std::string& basePath)const 
+void TriBase::createFolder(const std::string& basePath)const
 {
 	// 构造完整的文件夹路径  
 	std::filesystem::path folderPath = basePath;
@@ -719,7 +794,7 @@ void TriBase::createFolder(const std::string& basePath)const
 *  Returns:
 *    boll
 -------------------------------------------------------------------*/
-bool TriBase::isPointInPolygon_moreInner(const TriCoord& p, const std::vector<TriCoord>& polygon) {
+bool TriBase::isPointInPolygon_moreInner(const TriNode& p, const std::vector<TriNode>& polygon) {
 	const double EPSILON = 1e-10;
 	bool inside = false;
 	size_t j = polygon.size() - 1;
@@ -781,7 +856,7 @@ bool TriBase::isPointInPolygon_moreInner(const TriCoord& p, const std::vector<Tr
 *  Returns:
 *    boll
 -------------------------------------------------------------------*/
-bool TriBase::isPointInPolygon_moreOuter(const TriCoord& p, const std::vector<TriCoord>& polygon) {
+bool TriBase::isPointInPolygon_moreOuter(const TriNode& p, const std::vector<TriNode>& polygon) {
 	const double EPSILON = 1e-10;
 	bool inside = false;
 	size_t j = polygon.size() - 1;
@@ -834,14 +909,14 @@ bool TriBase::isPointInPolygon_moreOuter(const TriCoord& p, const std::vector<Tr
 	return inside;
 }
 
-void TriBase::reorderNodes(std::vector<TriCoord>& elements)
+void TriBase::reorderNodes(std::vector<TriNode>& elements)
 {
 	//step 1: 计算中心点
 	std::size_t elementNum = elements.size();
-	TriCoord modelCenter{ 0,0,0 };
+	TriNode modelCenter{ 0,0,0 };
 	for (size_t iPoint = 0; iPoint < elementNum; ++iPoint)
 	{
-		TriCoord per = elements[iPoint];
+		TriNode per = elements[iPoint];
 		modelCenter += per;
 	}
 	modelCenter /= (double)elementNum;
@@ -852,7 +927,7 @@ void TriBase::reorderNodes(std::vector<TriCoord>& elements)
 	for (size_t i = 0; i < elementNum; ++i)
 	{
 		auto& element = elements[i];
-		TriCoord vec = element - modelCenter;
+		TriNode vec = element - modelCenter;
 		double angle = atan2(vec.y(), vec.x());
 		angleAndIndex.emplace_back(angle, i);
 	}
@@ -860,7 +935,7 @@ void TriBase::reorderNodes(std::vector<TriCoord>& elements)
 	std::sort(angleAndIndex.begin(), angleAndIndex.end(),
 		[](const std::pair<double, size_t>& a, const std::pair<double, size_t>& b) { return a.first < b.first; });
 
-	std::vector<TriCoord> elementsTemp(elementNum);
+	std::vector<TriNode> elementsTemp(elementNum);
 	for (size_t i = 0; i < elementNum; ++i)
 	{
 		elementsTemp[i] = elements[angleAndIndex[i].second];

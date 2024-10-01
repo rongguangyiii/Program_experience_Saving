@@ -13,15 +13,10 @@ License
 #ifndef TRI_ELE_H  
 #define TRI_ELE_H 
 #pragma once
-#include"triangle/include/triCoord.h"
 #include"triangle/include/triedge.h"
 #include"triangle/include/trinode.h"
 #include<memory>
-
-
-
-//class triBase;
-
+#include<vector>
 
 enum class TriEleTag
 {
@@ -39,7 +34,6 @@ enum class TriEleType
 
 };
 
-
 class TriEle 
 {
 private:
@@ -47,7 +41,7 @@ private:
 	TriEleType trieleType_;
 	TriEleTag triEleTag_;
 	std::vector<std::shared_ptr<TriEdge>> triEdges_;
-	TriCoord triCenter_;
+	TriNode triCenter_;
 	std::vector<size_t> triVertexIndex_;
 	std::vector<TriNode> triNodesPtr_;
 
@@ -72,8 +66,8 @@ public:
 	const std::vector<size_t>& GetTriEleVertex() const { return triVertexIndex_; };
 	size_t GetTriEleIndex() const { return TriIndex_; };
 	void SetTriEleIndex(size_t currentTriIndex) { TriIndex_ = currentTriIndex; };
-	const TriCoord& getTriCenter() const { return triCenter_; };
-	void setTriCenter(const TriCoord& baryCenter) { triCenter_ = baryCenter; };
+	const TriNode& getTriCenter() const { return triCenter_; };
+	void setTriCenter(const TriNode& baryCenter) { triCenter_ = baryCenter; };
 	TriEleTag getTriEleTag() const { return triEleTag_; };
 	TriEleType getTriEleType() const { return trieleType_; };
 	void setTriEleTag(TriEleTag triEleTag) { triEleTag_ = triEleTag; };

@@ -59,8 +59,9 @@ private:
 		const std::unordered_map<size_t, size_t>& vertex2tecplotIndex, const std::string title) const;
 
 public:
-	TriBase() = delete;
-	TriBase(std::vector<TriCoord>& outterNode,  std::vector<TriCoord>& innerNode, const std::string& typeName);
+	TriBase() {};
+	TriBase(const std::string& type);//Debug 示例
+	TriBase(std::vector<TriNode>& outterNode,  std::vector<TriNode>& innerNode, const std::string& typeName);
 	void genCDT();
 	void filterTri();
 	void genEdgeTable();
@@ -70,10 +71,11 @@ public:
 	void genTriAndQuad(const TriEdge& edge, const std::vector<triElePtr_>& triangles);
 	void GenCompleteCell();   //存储四边形单元和三角形单元的索引
 	void gencell(const triEleMap_& content);
+	void setConstrainType(const std::string& type) { dividType_ = type; }
 
 	triElePtr_& GetTriEle(size_t index) { return triEleVec_.at(index); };
 	triEleMap_& GetTriEleVec() { return triEleVec_; };
-	const TriCoord& index2Coor(const size_t index) const { return TriNodeMap_.at(index).getcoord(); };
+	const TriNode& index2Coor(const size_t index) const { return TriNodeMap_.at(index); };
 	std::vector<TriEle>& getNotIdealTriVec()  { return notIdealTriVec_; };
 	void addNotIdealTri(const TriEle& triEle) { notIdealTriVec_.push_back(triEle); };
 	const EdgeTable& getEdgeTable() const { return edgeTable_; };
@@ -83,12 +85,17 @@ public:
 
 public:
 	//基本方法函数
-	void reorderPointsIndex(std::vector<std::pair<TriCoord, size_t>>& PointLists, const TriCoord& modelCenter);
-	bool isCollinear(const TriCoord& p1, const TriCoord& p2, const TriCoord& p3);
+	void insertPoint(std::map<size_t, std::vector<double>>CoorMap);
+	void insertCtrlLine(std::map<size_t, std::vector<double>>CoorMap);
+	void insertCtrlInnerPoly(std::map<size_t, std::vector<double>>CoorMap);
+	void insertCtrlOutterPoly(std::map<size_t, std::vector<double>>CoorMap);
+
+	void reorderPointsIndex(std::vector<std::pair<TriNode, size_t>>& PointLists, const TriNode& modelCenter);
+	bool isCollinear(const TriNode& p1, const TriNode& p2, const TriNode& p3);
 	void createFolder(const std::string& basePath)const;
-	bool isPointInPolygon_moreOuter(const TriCoord& p, const std::vector<TriCoord>& polygon);
-	bool isPointInPolygon_moreInner(const TriCoord& p, const std::vector<TriCoord>& polygon);
-	void reorderNodes(std::vector<TriCoord>& NodeList);
+	bool isPointInPolygon_moreOuter(const TriNode& p, const std::vector<TriNode>& polygon);
+	bool isPointInPolygon_moreInner(const TriNode& p, const std::vector<TriNode>& polygon);
+	void reorderNodes(std::vector<TriNode>& NodeList);
 };
 
 
