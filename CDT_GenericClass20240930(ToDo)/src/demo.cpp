@@ -11,53 +11,55 @@ typedef CDT::Point Point;
 
 
 int main() {
-	CDT cdt;
+    CDT cdt;
 
-	// 定义在直线 x = 1 上的约束点
-	std::vector<Point> constrain_line = {
-	Point(1.0, 0.0),
-	Point(1.0, 0.5),
-	Point(1.0, 1.0),
-	Point(1.0, 1.5),
-	Point(1.0, 2.0)
-	};
+    // 定义在直线 x = 1 上的约束点
+    std::vector<Point> constrain_line = {
+        Point(1.0, 0.0),
+        Point(1.0, 0.5),
+        Point(1.0, 1.0),
+        Point(1.0, 1.5),
+        Point(1.0, 2.0)
+    };
 
-	for (size_t i = 0; i < constrain_line.size() - 1; ++i) {
-		cdt.insert(constrain_line[i], constrain_line[i + 1]);
-	}
+    // 插入约束线
+    for (size_t i = 0; i < constrain_line.size() - 1; ++i) {
+        cdt.insert_constraint(constrain_line[i], constrain_line[i + 1]);
+    }
 
-	// 定义外围侧区域的点
-	std::vector<Point> bound_side = {
-		Point(0.5, 0.5),
-		Point(0.5, 1.5),
-		Point(0.2, 1.0),
-		Point(0.8, 0.8),
-		Point(0.7, 1.3),
-		Point(1.5, 0.5),
-		Point(1.5, 1.5),
-		Point(1.8, 1.0),
-		Point(1.2, 0.8),
-		Point(1.7, 1.3),
-		Point(0.0, 0.0),
-		Point(0.0, 0.5),
-		Point(0.0, 1.0),
-		Point(0.0, 1.5),
-		Point(0.0, 2.0),
-		Point(0.5, 2.0),
-		Point(1.5, 2.0),
-		Point(2.0, 2.0),
-		Point(2.0, 1.5),
-		Point(2.0, 1.0),
-		Point(2.0, 0.5),
-		Point(2.0, 0.0),
-		Point(1.5, 0.0),
-		Point(0.5, 0.0),
-	};
+    // 定义外围侧区域的点
+    std::vector<Point> bound_side = {
+        Point(0.5, 0.5),
+        Point(0.5, 1.5),
+        Point(0.2, 1.0),
+        Point(0.8, 0.8),
+        Point(0.7, 1.3),
+        Point(1.5, 0.5),
+        Point(1.5, 1.5),
+        Point(1.8, 1.0),
+        Point(1.2, 0.8),
+        Point(1.7, 1.3),
+        Point(0.0, 0.0),
+        Point(0.0, 0.5),
+        Point(0.0, 1.0),
+        Point(0.0, 1.5),
+        Point(0.0, 2.0),
+        Point(0.5, 2.0),
+        Point(1.5, 2.0),
+        Point(2.0, 2.0),
+        Point(2.0, 1.5),
+        Point(2.0, 1.0),
+        Point(2.0, 0.5),
+        Point(2.0, 0.0),
+        Point(1.5, 0.0),
+        Point(0.5, 0.0),
+    };
 
-	// 将外围点插入到三角剖分中
-	for (const auto& point : bound_side) {
-		cdt.insert(point);
-	}
+    // 将外围点插入到三角剖分中
+    for (const auto& point : bound_side) {
+        cdt.insert(point);
+    }
+
 
 	// 打开一个文件用于输出到 Tecplot
 	std::ofstream out("triang20240825.dat");

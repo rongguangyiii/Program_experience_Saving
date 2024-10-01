@@ -13,8 +13,8 @@ License
 
 #include "triangle/include/triEle.h"
 #include <stdexcept>
-//#include "utility/include/log.h"
-#include<memory>
+#include <cmath>
+#include <memory>
 
 
 TriEle::TriEle(const std::vector<TriNode>& ptrVec, size_t index, TriEleTag ttag, TriEleType ttype)
@@ -51,9 +51,9 @@ bool TriEle::isQualifiedTri() const
 bool TriEle::isCollinear() const
 {
 	//判断是否为合格的三角形
-	TriCoord p1 = triNodesPtr_.at(0).getcoord();
-	TriCoord p2 = triNodesPtr_.at(1).getcoord();
-	TriCoord p3 = triNodesPtr_.at(2).getcoord();
+	TriNode p1 = triNodesPtr_.at(0);
+	TriNode p2 = triNodesPtr_.at(1);
+	TriNode p3 = triNodesPtr_.at(2);
 	// 使用斜率法判断三点是否共线  
 	// 如果斜率相同或任意两点重合（在容差范围内），则它们共线  
 	constexpr double epsilon = std::numeric_limits<double>::epsilon();
@@ -111,4 +111,3 @@ TriEleType TriEle::judgeTriType() const
 		throw std::runtime_error("Caught an exception!");
 	}
 }
-

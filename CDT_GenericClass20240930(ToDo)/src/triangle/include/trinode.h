@@ -12,8 +12,9 @@ License
 \*---------------------------------------------------------------------------*/
 #ifndef TRINODE_H_
 #define TRINODE_H_
-#include"triangle/include/triCoord.h"
-
+#include<algorithm>
+#include<cmath>
+#include<stdexcept>
 
 enum class TriNodeType
 {
@@ -25,20 +26,30 @@ enum class TriNodeType
 class TriNode
 {
 public:
-	TriNode() :coord_({ 0,0,0 }), index_(0), type_(TriNodeType::Notset) {};
-	TriNode(const TriCoord& in_coor, const size_t id, TriNodeType ttype = TriNodeType::Notset)
-		:coord_(in_coor), index_(id), type_(ttype) {};
+	TriNode() :x_(0), y_(0), z_(0), index_(0), type_(TriNodeType::Notset) {};
+	TriNode(double x, double y, double z, size_t id = 0, TriNodeType type = TriNodeType::Notset) :x_(x), y_(y), z_(z), index_(id), type_(type) {}
+	TriNode(const TriNode& pt) :x_(pt.x_), y_(pt.y_), z_(pt.z_), type_(pt.type_), index_(pt.index_) {}
 	~TriNode() {};
-	const TriCoord& getcoord()const { return coord_; }
 	TriNodeType gettype()const { return type_; }
 	const size_t getindex() const { return index_; }
+public:
+	const double& x() const { return x_; }
+	const double& y() const { return y_; }
+	const double& z() const { return z_; }
+	void SetCoord(const double& x = 0, const double& y = 0, const double& z = 0);
+	bool operator ==(const TriNode& pt)const;
+	double norm() const;
+	TriNode& operator+=(const TriNode& pt);
+	TriNode& operator-=(const TriNode& pt);
+	TriNode& operator/=(double scalar);
+	TriNode operator-(const TriNode& pt)const;
+	TriNode operator+(const TriNode& pt)const;
+	bool operator<(const TriNode& other) const;
 private:
-	TriCoord coord_;
-	TriNodeType type_;
 	size_t index_;
+	double x_, y_, z_;
+	TriNodeType type_;
+
 };
-
-
-
 
 #endif // !CDTPOINT_H_
