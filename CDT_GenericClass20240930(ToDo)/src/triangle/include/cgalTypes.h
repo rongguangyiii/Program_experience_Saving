@@ -44,8 +44,4 @@ typedef CDT::Vertex_handle Vertex_handle;
 typedef CDT::Finite_faces_iterator Finite_faces_iterator;
 
 
-namespace Tools {
-	std::vector<Point_2> getConvexHull(const std::vector<Point_2>& points, double alpha);
-}
-
 #endif // CGAL_TYPES_H

@@ -16,7 +16,7 @@ endif()
 add_subdirectory(${PROJECT_SOURCE_DIR}/src)
 
 #生成构建目标
-add_executable(${PROJECT_NAME} "${PROJECT_SOURCE_DIR}/src/demo01.cpp" ${SRC_FILE})
+add_executable(${PROJECT_NAME} "${PROJECT_SOURCE_DIR}/src/demo05.cpp" ${SRC_FILE})
 
 #程序输出路径
 # set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/out/${CMAKE_BUILD_TYPE})
@@ -32,7 +32,13 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/sr
 find_package(Eigen3 CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen)
 
-#VTK库
+#CGAL库
 find_package(CGAL CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE CGAL::CGAL)
 
+# nanoflann 库
+find_package(nanoflann CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE nanoflann::nanoflann)
+
+find_package(flann CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE flann::flann flann::flann_cpp)
