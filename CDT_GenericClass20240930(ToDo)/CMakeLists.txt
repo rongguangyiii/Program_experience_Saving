@@ -16,7 +16,7 @@ endif()
 add_subdirectory(${PROJECT_SOURCE_DIR}/src)
 
 #生成构建目标
-add_executable(${PROJECT_NAME} "${PROJECT_SOURCE_DIR}/src/demo05.cpp" ${SRC_FILE})
+add_executable(${PROJECT_NAME} "${PROJECT_SOURCE_DIR}/src/demo07.cpp" ${SRC_FILE})
 
 #程序输出路径
 # set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/out/${CMAKE_BUILD_TYPE})

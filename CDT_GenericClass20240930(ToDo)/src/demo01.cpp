@@ -5,7 +5,6 @@
 #include <fstream>
 #include <map>
 
-
 int main() {
 	//TriBase test01("ring_ring");
 	//test01.boostMesh();
