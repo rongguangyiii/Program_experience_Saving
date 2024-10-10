@@ -1,6 +1,8 @@
 set(CMAKE_CXX_STANDARD 17)
 
 #自动查找指定目录下的所有源文件
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/grid/src  SRC_FILE)
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/Tools/src  SRC_FILE)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/triangle/src  SRC_FILE)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/PointSearcher/src  SRC_FILE)
 
