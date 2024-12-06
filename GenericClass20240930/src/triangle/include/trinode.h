@@ -27,9 +27,11 @@ class TriNode
 {
 public:
 	TriNode() :x_(0), y_(0), z_(0), index_(0), type_(TriNodeType::Notset) {};
-	TriNode(double x, double y, double z, size_t id = 0, TriNodeType type = TriNodeType::Notset) :x_(x), y_(y), z_(z), index_(id), type_(type) {}
+	TriNode(double x, double y, double z = 0.0, size_t id = 0, TriNodeType type = TriNodeType::Notset) :x_(x), y_(y), z_(z), index_(id), type_(type) {}
 	TriNode(const TriNode& pt) :x_(pt.x_), y_(pt.y_), z_(pt.z_), type_(pt.type_), index_(pt.index_) {}
 	~TriNode() {};
+	void setTriNodeIdx(size_t id) { index_ = id; }
+	void setTriNodeType(TriNodeType type) { type_ = type; }
 	TriNodeType gettype()const { return type_; }
 	const size_t getindex() const { return index_; }
 public:
