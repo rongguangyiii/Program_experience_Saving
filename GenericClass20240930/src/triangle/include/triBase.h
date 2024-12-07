@@ -1,4 +1,4 @@
-/*---------------------------------------------------------------------------
+ï»¿/*---------------------------------------------------------------------------
 	"A generic class that invokes the CGAL library to generate triangle connectivity information."
 	Copyright (C) ,Since 2024
 -------------------------------------------------------------------------------
@@ -20,9 +20,9 @@ License
 #include <map>
 
 
-//Ê¹ÓÃCGALÉú³ÉµÄÈı½ÇĞÎ£¬Õâ¸öÀàÊ¹ÓÃÆğÀ´Ì«ºÄÊ±ÁË¡£ĞèÒªĞŞ¸Ä¡£
-// 20240604 22£º29
-// ÓÃÓÚEdgeµÄ¹şÏ£º¯Êı
+//ä½¿ç”¨CGALç”Ÿæˆçš„ä¸‰è§’å½¢ï¼Œè¿™ä¸ªç±»ä½¿ç”¨èµ·æ¥å¤ªè€—æ—¶äº†ã€‚éœ€è¦ä¿®æ”¹ã€‚
+// 20240604 22ï¼š29
+// ç”¨äºEdgeçš„å“ˆå¸Œå‡½æ•°
 struct EdgeHash {
 	std::size_t operator()(const std::shared_ptr<TriEdge>& k) const;
 };
@@ -33,14 +33,14 @@ struct EdgeEqual {
 	}
 };
 
-enum class DataType
+enum class ConnectionType
 {
-	/*ring: ÓĞĞòÍ¹¶à±ßĞÎ£»line:ÓĞĞòÖ±Ïß; point:ÎŞĞòµã*/
-	NUset,
-	ring_ring,
+	/* 1. poly: æœ‰åºå‡¸å¤šè¾¹å½¢ï¼›2. line:æœ‰åºç›´çº¿; 3. point:æ— åºç‚¹*/
+	notset,
+	point_poly,
 	point_line,
-	point_ring,
 	point_point,
+	poly_poly,
 };
 
 class TriBase
@@ -50,19 +50,20 @@ class TriBase
 	using cellVec_ = std::vector< std::vector<size_t> >;
 	using EdgeTable = std::unordered_map<std::shared_ptr<TriEdge>, std::vector<triElePtr_>, EdgeHash, EdgeEqual>;
 public:
-	TriBase() :dividType_(DataType::NUset), isoutFile(true) {};
-	TriBase(const DataType& type);//Debug Ê¾Àı
-	TriBase(std::vector<TriNode>& outterNode,  std::vector<TriNode>& innerNode, const DataType& typeName);
+	TriBase() :connctType_(ConnectionType::notset), isoutFile(true) {};
+	TriBase(const ConnectionType& type);//Debug ç¤ºä¾‹
+	TriBase(std::vector<TriNode>& outterNode,  std::vector<TriNode>& innerNode, const ConnectionType& typeName);
 	void genCDT();
 	void filterTri();
 	void genEdgeTable();
+	void checkConnectiontype()const;
 	void reconstructNotIdealTriGrid();
 	void reconstructNotIdealTriGrid(const TriEdge& edge, const std::vector<triElePtr_>& triPtr);
 	void genTriAndQuad();
 	void genTriAndQuad(const TriEdge& edge, const std::vector<triElePtr_>& triangles);
-	void GenCompleteCell();   //´æ´¢ËÄ±ßĞÎµ¥ÔªºÍÈı½ÇĞÎµ¥ÔªµÄË÷Òı
+	void GenCompleteCell();   //å­˜å‚¨å››è¾¹å½¢å•å…ƒå’Œä¸‰è§’å½¢å•å…ƒçš„ç´¢å¼•
 	void gencell(const triEleMap_& content);
-	void setConstrainType(const DataType& type) { dividType_ = type; }
+	void setConnectionType(const ConnectionType& type) { connctType_ = type; }
 	triElePtr_& GetTriEle(size_t index) { return triEleVec_.at(index); };
 	triEleMap_& GetTriEleVec() { return triEleVec_; };
 	const TriNode& index2Coor(const size_t index) const { return TriNodeMap_.at(index); };
@@ -74,7 +75,7 @@ public:
 	std::vector<size_t> getRemarkIdx() { return reMarkIdx_; }
 	void boostMesh();
 public:
-	//»ù±¾·½·¨º¯Êı
+	//åŸºæœ¬æ–¹æ³•å‡½æ•°
 	void insertPoint(std::vector<TriNode> nodes, TriNodeType nodetype);
 	void insertCtrlLine(std::vector<TriNode> nodes, TriNodeType nodetype = TriNodeType::inner);
 	void insertCtrlPoly(std::vector<TriNode> nodes, TriNodeType nodetype);
@@ -96,15 +97,15 @@ private:
 		const std::unordered_map<size_t, size_t>& vertex2tecplotIndex, const std::string title) const;
 private:
 	bool isoutFile;
-	DataType dividType_;
+	ConnectionType connctType_;
 	triEleMap_ triEleVec_;
 	std::vector<TriEle> notIdealTriVec_;
 	cellVec_ cell_;
-	EdgeTable edgeTable_;// ±ß±íÊ¹ÓÃunordered_mapÀ´´æ´¢£¬¼üÊÇEdge£¬ÖµÊÇ°üº¬¸Ã±ßµÄÈı½ÇĞÎÖÇÄÜÖ¸Õë¶ÔÏóÁĞ±í
+	EdgeTable edgeTable_;// è¾¹è¡¨ä½¿ç”¨unordered_mapæ¥å­˜å‚¨ï¼Œé”®æ˜¯Edgeï¼Œå€¼æ˜¯åŒ…å«è¯¥è¾¹çš„ä¸‰è§’å½¢æ™ºèƒ½æŒ‡é’ˆå¯¹è±¡åˆ—è¡¨
 	std::vector<size_t> reMarkIdx_;
 	std::unordered_map<size_t, TriNode> TriNodeMap_;
 	std::vector<size_t> cgalPointsIndexVec_;
-	std::pair<std::vector<size_t>, std::unordered_map<size_t, size_t>> vertex2tecplotIndex_;//first:µãµÄË÷Òı; second:¾Ö²¿Ë÷Òı
+	std::pair<std::vector<size_t>, std::unordered_map<size_t, size_t>> vertex2tecplotIndex_;//first:ç‚¹çš„ç´¢å¼•; second:å±€éƒ¨ç´¢å¼•
 	std::map<std::string, std::vector<size_t>> splitIndex_;
 };
 
@@ -119,22 +120,23 @@ private:
 
 int main() {
 	//--------------------------------------------------------
-	//ÎªÁË¹¹½¨ÕıÈ·µÄCDT£¬ÕâÀïÌá¹©ÈıÖÖÀàĞÍ£¬outter-inner:
-	//ring_ring;  point_point; point_line; point_ring;
-	//ÍêÉÆCDT,Ö÷ÒªÔö¼ÓÁËÍØÆËÓÅ»¯£¬·´À¡¸üĞÂ±³¾°Íø¸ñµãµÄ¹¦ÄÜ
+	//ä¸ºäº†æ„å»ºæ­£ç¡®çš„CDTï¼Œè¿™é‡Œæä¾›ä¸‰ç§ç±»å‹ï¼Œoutter-inner:
+	//point_poly; point_line;  point_point;
+	//å®Œå–„CDT,ä¸»è¦å¢åŠ äº†æ‹“æ‰‘ä¼˜åŒ–ï¼Œåé¦ˆæ›´æ–°èƒŒæ™¯ç½‘æ ¼ç‚¹çš„åŠŸèƒ½
 	//--------------------------------------------------------
-TriBase test;
-test.setConstrainType(DataType::ring_ring);
-std::vector<TriNode>poly_1_outter = { {1,2,0,1}, {3,2,0,2}, {7,2,0,3}, {7,4,0,4}, {8,7,0,5}, {5,8,0,6}, {2,6,0,7}, {3,4,0,8} };
-std::vector<TriNode>poly_2_inner = { {4,4,0,9}, {6,3,0,10}, {6,6,0,11}, {4,6,0,12}, {5,5,0,13} };
-//test.insertPoint(poly_1_outter, TriNodeType::outter);
-//test.insertPoint(poly_2_inner, TriNodeType::inner);
-test.insertCtrlPoly(poly_1_outter, TriNodeType::outter);
-test.insertCtrlPoly(poly_2_inner, TriNodeType::inner);
-test.setfileOnOff(true);
-test.boostMesh();
+	TriBase test;
+	test.setfileOnOff(true);
+	test.setConnectionType(ConnectionType::point_line);
+	std::vector<TriNode>poly_1_outter = { {1,2,0,1}, {3,2,0,2}, {7,2,0,3}, {7,4,0,4}, {8,7,0,5}, {5,8,0,6}, {2,6,0,7}, {3,4,0,8} };
+	std::vector<TriNode>poly_2_inner = { {4,4,0,9}, {6,3,0,10}, {6,6,0,11}, {4,6,0,12}, {5,5,0,13} };
+	test.insertPoint(poly_1_outter, TriNodeType::outter);
+	//test.insertPoint(poly_2_inner, TriNodeType::inner);
+	//test.insertCtrlPoly(poly_1_outter,TriNodeType::outter);
+	test.insertCtrlLine(poly_2_inner,TriNodeType::inner);
+	//test.insertCtrlPoly(poly_2_inner, TriNodeType::inner);
+	test.boostMesh();
 
-return 0;
+	return 0;
 
 }
 ----------------------------------------------------------------------------------------*/

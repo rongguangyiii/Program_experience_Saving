@@ -37,18 +37,17 @@ void TriBase::addEdgeTableItem(const triElePtr_& triEle_ptr)
 
 }
 
-TriBase::TriBase(std::vector<TriNode>& outterNode, std::vector<TriNode>& innerNode, const DataType& type)
-	:dividType_(type), isoutFile(false)
+TriBase::TriBase(std::vector<TriNode>& outterNode, std::vector<TriNode>& innerNode, const ConnectionType& type)
+	:connctType_(type), isoutFile(false)
 {
-	if (dividType_ == DataType::ring_ring){
-		reorderNodes(outterNode);
-		reorderNodes(innerNode);
+	if (connctType_ == ConnectionType::point_poly){
+		//reorderNodes(innerNode);
 	}
-	else if (dividType_ == DataType::point_ring){
-		reorderNodes(innerNode);
-	}
-	else if (dividType_ == DataType::point_line|| dividType_ == DataType::point_point){	
+	else if (connctType_ == ConnectionType::point_line|| connctType_ == ConnectionType::point_point){
 		//do nothing
+	}
+	else if (connctType_ == ConnectionType::poly_poly){
+		reorderNodes(outterNode);
 	}
 	else{
 		throw std::runtime_error("Caught an exception!");
@@ -75,7 +74,9 @@ TriBase::TriBase(std::vector<TriNode>& outterNode, std::vector<TriNode>& innerNo
 
 void TriBase::insertCtrlPoly(std::vector<TriNode> nodes, TriNodeType nodetype)
 {
-	reorderNodes(nodes);
+	if (TriNodeType::outter==nodetype){
+		reorderNodes(nodes);
+	}
 	for (auto& it : nodes)
 	{
 		it.setTriNodeType(nodetype);
@@ -108,8 +109,8 @@ void TriBase::insertPoint(std::vector<TriNode> nodes, TriNodeType nodetype)
 /*----------------------------------------------------------------------------------------------
 	TO DEBUG
 ------------------------------------------------------------------------------------------------*/
-TriBase::TriBase(const DataType& type)
-	:dividType_(type), isoutFile(true)
+TriBase::TriBase(const ConnectionType& type)
+	:connctType_(type), isoutFile(true)
 {
 	std::vector<std::vector<double>> poly_1_outter = { {1,2}, {3,2}, {7,2}, {7,4}, {8,7}, {5,8}, {2,6}, {3,4} };
 	std::vector<std::vector<double>> poly_2_inner = { {4,4}, {6,3}, {6,6}, {4,6}, {5,5} };
@@ -235,21 +236,21 @@ void TriBase::genCDT()
 	vertex2tecplotIndex_.second = vertex2tecplotIndex;
 
 	//indeart Constrain respectly
-	if (dividType_ == DataType::ring_ring)
+	if (connctType_ == ConnectionType::point_poly|| connctType_ == ConnectionType::point_line)
+	{
+		for (size_t i = 0; i < cgal_innerPointsVec.size() - 1; ++i)
+			cdt.insert_constraint(cgal_innerPointsVec[i], cgal_innerPointsVec[i + 1]);
+	}
+	else if (connctType_ == ConnectionType::point_point)
+	{ 
+		//DO NOTHING
+	}
+	else if (connctType_ == ConnectionType::poly_poly)
 	{
 		for (size_t i = 0; i < cgal_outerPointsVec.size(); ++i)
 			cdt.insert_constraint(cgal_outerPointsVec[i], cgal_outerPointsVec[(i + 1) % cgal_outerPointsVec.size()]);
 		for (size_t i = 0; i < cgal_innerPointsVec.size(); ++i)
 			cdt.insert_constraint(cgal_innerPointsVec[i], cgal_innerPointsVec[(i + 1) % cgal_innerPointsVec.size()]);
-	}
-	else if (dividType_ == DataType::point_line|| dividType_ == DataType::point_ring)
-	{
-		for (size_t i = 0; i < cgal_innerPointsVec.size() - 1; ++i)
-			cdt.insert_constraint(cgal_innerPointsVec[i], cgal_innerPointsVec[i + 1]);
-	}
-	else if (dividType_ == DataType::point_point)
-	{ 
-		//DO NOTHING
 	}
 	else
 	{ 
@@ -269,18 +270,18 @@ void TriBase::genCDT()
 		if (isCollinear(p0, p1, p2))
 			continue;
 		TriNode triCenter = (p0 += p1 += p2) /= 3.0;
-		if (dividType_ == DataType::ring_ring) {
+		if (connctType_ == ConnectionType::point_poly) {
+			if (isPointInPolygon_moreInner(triCenter, poly_innerCoor))continue;
+			std::vector<TriNode> Nodes{ TriNodeMap_.at(v0) ,TriNodeMap_.at(v1),TriNodeMap_.at(v2) };
+			if (judgeTriType(Nodes) == TriEleType::Outer_only)continue;
+		}
+		else if (connctType_ == ConnectionType::point_line || connctType_ == ConnectionType::point_point) {
+			std::vector<TriNode> Nodes{ TriNodeMap_.at(v0) ,TriNodeMap_.at(v1),TriNodeMap_.at(v2) };
+			if (judgeTriType(Nodes) == TriEleType::Outer_only)continue;
+		}
+		else if (connctType_ == ConnectionType::poly_poly) {
 			if (isPointInPolygon_moreInner(triCenter, poly_innerCoor))continue;
 			if (!isPointInPolygon_moreOuter(triCenter, poly_outerCoor))continue;
-		}
-		else if (dividType_ == DataType::point_ring) {
-			if (isPointInPolygon_moreInner(triCenter, poly_innerCoor))continue;
-			std::vector<TriNode> Nodes{ TriNodeMap_.at(v0) ,TriNodeMap_.at(v1),TriNodeMap_.at(v2) };
-			if (judgeTriType(Nodes) == TriEleType::Outer_only)continue;
-		}
-		else if (dividType_ == DataType::point_line || dividType_ == DataType::point_point) {
-			std::vector<TriNode> Nodes{ TriNodeMap_.at(v0) ,TriNodeMap_.at(v1),TriNodeMap_.at(v2) };
-			if (judgeTriType(Nodes) == TriEleType::Outer_only)continue;
 		}
 		std::vector<TriNode> triNodes{ TriNodeMap_.at(v0) ,TriNodeMap_.at(v1),TriNodeMap_.at(v2) };
 		TriEle triEle(triNodes, triIndex++);
@@ -537,6 +538,7 @@ void TriBase::gencell(const triEleMap_& content)
 
 void TriBase::boostMesh()
 {
+	checkConnectiontype();
 	genCDT();
 	//reconstructNotIdealTriGrid();//No need!
 	std::string method = "CDT";
@@ -549,6 +551,13 @@ void TriBase::boostMesh()
 		throw std::runtime_error("TriEle not found in triEleVec_");
 	isRemarkBack();
 	return;
+}
+void TriBase::checkConnectiontype()const
+{
+	if (connctType_==ConnectionType::notset)
+	{
+		throw std::runtime_error("ConnectionType is ERROR!");
+	}
 }
 
 void TriBase::isRemarkBack()
@@ -711,7 +720,6 @@ bool TriBase::isPointInPolygon_moreInner(const TriNode& p, const std::vector<Tri
 	}
 	return inside;
 }
-
 
 bool TriBase::isPointInPolygon_moreOuter(const TriNode& p, const std::vector<TriNode>& polygon) {
 	const double EPSILON = 1e-10;
